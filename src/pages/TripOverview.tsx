@@ -1,11 +1,12 @@
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { PageHeader } from '../components/layout/PageHeader'
 import { TripStats } from '../components/trip/TripStats'
 import { useTrip } from '../hooks/useTrip'
 
 export function TripOverviewPage() {
   const { id = '' } = useParams()
-  const { tripDetail, loading, error } = useTrip(id)
+  const navigate = useNavigate()
+  const { tripDetail, loading, error, deleteTrip } = useTrip(id)
 
   if (loading && !tripDetail) {
     return <p className="p-4 text-sm text-slate-500">加载中...</p>
@@ -16,6 +17,12 @@ export function TripOverviewPage() {
   }
 
   const doneTasks = tripDetail.tasks.filter((task) => task.completed).length
+  const removeTrip = async () => {
+    const confirmed = window.confirm(`确认永久删除旅行「${tripDetail.trip.title}」吗？删除后不可恢复。`)
+    if (!confirmed) return
+    await deleteTrip(id)
+    navigate('/')
+  }
 
   return (
     <div className="pb-24">
@@ -30,6 +37,13 @@ export function TripOverviewPage() {
             {tripDetail.trip.startDate} ~ {tripDetail.trip.endDate}
           </p>
           <p className="mt-1 text-sm text-slate-600">旅伴：{tripDetail.trip.travelers.join('、') || '未填写'}</p>
+          <button
+            type="button"
+            onClick={() => void removeTrip()}
+            className="mt-4 min-h-11 w-full rounded-xl border border-red-200 bg-red-50 text-sm font-medium text-red-700"
+          >
+            删除本次旅行
+          </button>
         </section>
 
         <TripStats

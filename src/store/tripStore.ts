@@ -1,11 +1,25 @@
 import { create } from 'zustand'
-import type { Trip, TripDetail } from '../types'
+import type {
+  ItineraryItemCreateInput,
+  ItineraryItemUpdateInput,
+  TaskCreateInput,
+  TaskUpdateInput,
+  Trip,
+  TripDetail,
+} from '../types'
 import {
+  createItineraryItem,
+  createTask,
   createTrip,
+  deleteItineraryItem,
+  deleteTask,
+  deleteTrip,
   getTripDetail,
   importTripPlan,
   listTrips,
   toggleTask,
+  updateItineraryItem,
+  updateTask,
 } from '../lib/tripService'
 
 interface TripStore {
@@ -20,6 +34,17 @@ interface TripStore {
     : never
   importPlan: (tripId: string, text: string) => Promise<string[]>
   toggleTaskStatus: (tripId: string, taskId: string, completed: boolean) => Promise<void>
+  deleteTrip: (tripId: string) => Promise<void>
+  createItineraryItem: (
+    tripId: string,
+    input: Omit<ItineraryItemCreateInput, 'tripId'>,
+  ) => Promise<void>
+  updateItineraryItem: (tripId: string, itemId: string, input: ItineraryItemUpdateInput) => Promise<void>
+  toggleItineraryItemComplete: (tripId: string, itemId: string, completed: boolean) => Promise<void>
+  deleteItineraryItem: (tripId: string, itemId: string) => Promise<void>
+  createTask: (tripId: string, input: Omit<TaskCreateInput, 'tripId'>) => Promise<void>
+  updateTask: (tripId: string, taskId: string, input: TaskUpdateInput) => Promise<void>
+  deleteTask: (tripId: string, taskId: string) => Promise<void>
 }
 
 export const useTripStore = create<TripStore>((set) => ({
@@ -61,7 +86,51 @@ export const useTripStore = create<TripStore>((set) => ({
     return result.warnings
   },
   toggleTaskStatus: async (tripId, taskId, completed) => {
-    await toggleTask(taskId, completed)
+    const detail = await getTripDetail(tripId)
+    if (!detail) {
+      throw new Error('旅行不存在')
+    }
+    await toggleTask(taskId, completed, detail.trip.startDate)
+    const updatedDetail = await getTripDetail(tripId)
+    set({ tripDetail: updatedDetail })
+  },
+  deleteTrip: async (tripId) => {
+    await deleteTrip(tripId)
+    const trips = await listTrips()
+    set({ trips, tripDetail: null })
+  },
+  createItineraryItem: async (tripId, input) => {
+    await createItineraryItem({ ...input, tripId })
+    const detail = await getTripDetail(tripId)
+    set({ tripDetail: detail })
+  },
+  updateItineraryItem: async (tripId, itemId, input) => {
+    await updateItineraryItem(itemId, input)
+    const detail = await getTripDetail(tripId)
+    set({ tripDetail: detail })
+  },
+  toggleItineraryItemComplete: async (tripId, itemId, completed) => {
+    await updateItineraryItem(itemId, { completed, updatedBy: '旅伴' })
+    const detail = await getTripDetail(tripId)
+    set({ tripDetail: detail })
+  },
+  deleteItineraryItem: async (tripId, itemId) => {
+    await deleteItineraryItem(itemId)
+    const detail = await getTripDetail(tripId)
+    set({ tripDetail: detail })
+  },
+  createTask: async (tripId, input) => {
+    await createTask({ ...input, tripId })
+    const detail = await getTripDetail(tripId)
+    set({ tripDetail: detail })
+  },
+  updateTask: async (tripId, taskId, input) => {
+    await updateTask(taskId, input)
+    const detail = await getTripDetail(tripId)
+    set({ tripDetail: detail })
+  },
+  deleteTask: async (tripId, taskId) => {
+    await deleteTask(taskId)
     const detail = await getTripDetail(tripId)
     set({ tripDetail: detail })
   },

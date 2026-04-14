@@ -7,9 +7,11 @@ interface PageHeaderProps {
   subtitle?: string
   backTo?: string
   rightAction?: ReactNode
+  /** 标题行下方全宽区域（如统一工具栏） */
+  below?: ReactNode
 }
 
-export function PageHeader({ title, subtitle, backTo, rightAction }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, backTo, rightAction, below }: PageHeaderProps) {
   const navigate = useNavigate()
 
   const copyLink = async () => {
@@ -47,6 +49,9 @@ export function PageHeader({ title, subtitle, backTo, rightAction }: PageHeaderP
           </button>
         )}
       </div>
+      {below ? (
+        <div className="mx-auto w-full max-w-md border-t border-emerald-100 px-4 py-2">{below}</div>
+      ) : null}
     </header>
   )
 }

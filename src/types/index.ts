@@ -86,3 +86,45 @@ export interface ParsedPlanResult {
   tasks: ParsedPlanTask[]
   warnings: string[]
 }
+
+export interface ItineraryItemCreateInput {
+  tripId: string
+  dayId: string
+  time: string
+  title: string
+  location?: string
+  notes?: string
+  assignee?: string
+}
+
+export interface ItineraryItemUpdateInput {
+  dayId?: string
+  time?: string
+  title?: string
+  location?: string
+  notes?: string
+  assignee?: string
+  completed?: boolean
+  updatedBy?: string
+}
+
+export interface TaskCreateInput {
+  tripId: string
+  type: TaskType
+  title: string
+  completed?: boolean
+  assignee?: string
+  notes?: string
+  updatedBy?: string
+}
+
+export interface TaskUpdateInput {
+  type?: TaskType
+  title?: string
+  completed?: boolean
+  assignee?: string
+  notes?: string
+  updatedBy?: string
+}
+
+export type TripDateStatus = 'beforeStart' | 'inProgress' | 'afterEnd'

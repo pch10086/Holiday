@@ -3,10 +3,14 @@ import { hasSupabaseEnv, supabase } from './supabase'
 import { parseTravelPlan } from './parser'
 import type {
   ItineraryDay,
+  ItineraryItemCreateInput,
+  ItineraryItemUpdateInput,
   ItineraryItem,
   NewTripInput,
   ParsedPlanResult,
   Task,
+  TaskCreateInput,
+  TaskUpdateInput,
   Trip,
   TripDetail,
 } from '../types'
@@ -40,6 +44,26 @@ function loadLocalData(): LocalDataShape {
 
 function saveLocalData(data: LocalDataShape) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+}
+
+function toLocalDateStart(date: string | Date): Date {
+  if (date instanceof Date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  }
+  const [year, month, day] = date.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
+function isBeforeTripStartDate(startDate: string): boolean {
+  const todayStart = toLocalDateStart(new Date())
+  const tripStart = toLocalDateStart(startDate)
+  return todayStart < tripStart
+}
+
+function ensureTripStarted(startDate: string) {
+  if (isBeforeTripStartDate(startDate)) {
+    throw new Error('旅行尚未开始，暂时不能勾选任务完成。')
+  }
 }
 
 function mapTrip(row: Record<string, unknown>): Trip {
@@ -192,6 +216,194 @@ export async function createTrip(input: NewTripInput): Promise<Trip> {
   return trip
 }
 
+export async function deleteTrip(tripId: string): Promise<void> {
+  if (hasSupabaseEnv && supabase) {
+    const { error } = await supabase.from('trips').delete().eq('id', tripId)
+    if (error) throw error
+    return
+  }
+
+  const local = loadLocalData()
+  local.trips = local.trips.filter((trip) => trip.id !== tripId)
+  local.days = local.days.filter((day) => day.tripId !== tripId)
+  local.itineraryItems = local.itineraryItems.filter((item) => item.tripId !== tripId)
+  local.tasks = local.tasks.filter((task) => task.tripId !== tripId)
+  saveLocalData(local)
+}
+
+export async function createItineraryItem(input: ItineraryItemCreateInput): Promise<void> {
+  const now = new Date().toISOString()
+  if (hasSupabaseEnv && supabase) {
+    const { error } = await supabase.from('itinerary_items').insert({
+      trip_id: input.tripId,
+      day_id: input.dayId,
+      time: input.time,
+      title: input.title,
+      location: input.location ?? null,
+      notes: input.notes ?? null,
+      completed: false,
+      assignee: input.assignee ?? null,
+      updated_by: input.assignee ?? null,
+      created_at: now,
+      updated_at: now,
+    })
+    if (error) throw error
+    return
+  }
+
+  const local = loadLocalData()
+  local.itineraryItems.push({
+    id: crypto.randomUUID(),
+    tripId: input.tripId,
+    dayId: input.dayId,
+    time: input.time,
+    title: input.title,
+    location: input.location,
+    notes: input.notes,
+    completed: false,
+    assignee: input.assignee,
+    updatedBy: input.assignee,
+    createdAt: now,
+    updatedAt: now,
+  })
+  saveLocalData(local)
+}
+
+export async function updateItineraryItem(
+  itemId: string,
+  input: ItineraryItemUpdateInput,
+): Promise<void> {
+  const now = new Date().toISOString()
+  if (hasSupabaseEnv && supabase) {
+    const patch: Record<string, unknown> = { updated_at: now }
+    if (input.dayId !== undefined) patch.day_id = input.dayId
+    if (input.time !== undefined) patch.time = input.time
+    if (input.title !== undefined) patch.title = input.title
+    if (input.location !== undefined) patch.location = input.location
+    if (input.notes !== undefined) patch.notes = input.notes
+    if (input.completed !== undefined) patch.completed = input.completed
+    if (input.assignee !== undefined) patch.assignee = input.assignee
+    if (input.updatedBy !== undefined) patch.updated_by = input.updatedBy
+    const { error } = await supabase.from('itinerary_items').update(patch).eq('id', itemId)
+    if (error) throw error
+    return
+  }
+
+  const local = loadLocalData()
+  local.itineraryItems = local.itineraryItems.map((item) =>
+    item.id === itemId
+      ? {
+          ...item,
+          dayId: input.dayId ?? item.dayId,
+          time: input.time ?? item.time,
+          title: input.title ?? item.title,
+          location: input.location ?? item.location,
+          notes: input.notes ?? item.notes,
+          completed: input.completed ?? item.completed,
+          assignee: input.assignee ?? item.assignee,
+          updatedBy: input.updatedBy ?? item.updatedBy,
+          updatedAt: now,
+        }
+      : item,
+  )
+  saveLocalData(local)
+}
+
+export async function deleteItineraryItem(itemId: string): Promise<void> {
+  if (hasSupabaseEnv && supabase) {
+    const { error } = await supabase.from('itinerary_items').delete().eq('id', itemId)
+    if (error) throw error
+    return
+  }
+
+  const local = loadLocalData()
+  local.itineraryItems = local.itineraryItems.filter((item) => item.id !== itemId)
+  saveLocalData(local)
+}
+
+export async function createTask(input: TaskCreateInput): Promise<void> {
+  const now = new Date().toISOString()
+  if (hasSupabaseEnv && supabase) {
+    const { error } = await supabase.from('tasks').insert({
+      trip_id: input.tripId,
+      type: input.type,
+      title: input.title,
+      completed: input.completed ?? false,
+      assignee: input.assignee ?? null,
+      notes: input.notes ?? null,
+      updated_by: input.updatedBy ?? null,
+      created_at: now,
+      updated_at: now,
+    })
+    if (error) throw error
+    return
+  }
+
+  const local = loadLocalData()
+  local.tasks.push({
+    id: crypto.randomUUID(),
+    tripId: input.tripId,
+    type: input.type,
+    title: input.title,
+    completed: input.completed ?? false,
+    assignee: input.assignee,
+    notes: input.notes,
+    updatedBy: input.updatedBy,
+    createdAt: now,
+    updatedAt: now,
+  })
+  saveLocalData(local)
+}
+
+export async function updateTask(taskId: string, input: TaskUpdateInput): Promise<void> {
+  const now = new Date().toISOString()
+  if (hasSupabaseEnv && supabase) {
+    const { error } = await supabase
+      .from('tasks')
+      .update({
+        type: input.type,
+        title: input.title,
+        completed: input.completed,
+        assignee: input.assignee,
+        notes: input.notes,
+        updated_by: input.updatedBy,
+        updated_at: now,
+      })
+      .eq('id', taskId)
+    if (error) throw error
+    return
+  }
+
+  const local = loadLocalData()
+  local.tasks = local.tasks.map((task) =>
+    task.id === taskId
+      ? {
+          ...task,
+          type: input.type ?? task.type,
+          title: input.title ?? task.title,
+          completed: input.completed ?? task.completed,
+          assignee: input.assignee ?? task.assignee,
+          notes: input.notes ?? task.notes,
+          updatedBy: input.updatedBy ?? task.updatedBy,
+          updatedAt: now,
+        }
+      : task,
+  )
+  saveLocalData(local)
+}
+
+export async function deleteTask(taskId: string): Promise<void> {
+  if (hasSupabaseEnv && supabase) {
+    const { error } = await supabase.from('tasks').delete().eq('id', taskId)
+    if (error) throw error
+    return
+  }
+
+  const local = loadLocalData()
+  local.tasks = local.tasks.filter((task) => task.id !== taskId)
+  saveLocalData(local)
+}
+
 export async function importTripPlan(
   tripId: string,
   text: string,
@@ -315,7 +527,14 @@ export async function importTripPlan(
   return { result }
 }
 
-export async function toggleTask(taskId: string, completed: boolean, updatedBy = '旅伴'): Promise<void> {
+export async function toggleTask(
+  taskId: string,
+  completed: boolean,
+  tripStartDate: string,
+  updatedBy = '旅伴',
+): Promise<void> {
+  ensureTripStarted(tripStartDate)
+
   if (hasSupabaseEnv && supabase) {
     const { error } = await supabase
       .from('tasks')

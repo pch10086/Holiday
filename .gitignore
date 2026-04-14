@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Travel plans (personal, not part of the app)
+travel-plans/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

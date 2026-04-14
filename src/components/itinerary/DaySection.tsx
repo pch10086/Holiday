@@ -1,13 +1,23 @@
 import type { ItineraryDay, ItineraryItem } from '../../types'
-import { ItineraryItem as ItemCard } from './ItineraryItem'
+import { ItineraryItem as ItemCard, type ItinerarySelectMode } from './ItineraryItem'
 
 interface DaySectionProps {
   day: ItineraryDay
   items: ItineraryItem[]
   nextItemId?: string
+  onToggleItemComplete?: (item: ItineraryItem, completed: boolean) => void
+  selectMode?: ItinerarySelectMode | null
+  onItemSelect?: (item: ItineraryItem) => void
 }
 
-export function DaySection({ day, items, nextItemId }: DaySectionProps) {
+export function DaySection({
+  day,
+  items,
+  nextItemId,
+  onToggleItemComplete,
+  selectMode,
+  onItemSelect,
+}: DaySectionProps) {
   return (
     <section className="space-y-3">
       <header>
@@ -16,7 +26,14 @@ export function DaySection({ day, items, nextItemId }: DaySectionProps) {
       </header>
       <div className="space-y-2">
         {items.map((item) => (
-          <ItemCard key={item.id} item={item} highlight={item.id === nextItemId} />
+          <ItemCard
+            key={item.id}
+            item={item}
+            highlight={item.id === nextItemId && !selectMode}
+            onToggleComplete={onToggleItemComplete}
+            selectMode={selectMode}
+            onItemSelect={onItemSelect}
+          />
         ))}
         {!items.length ? (
           <p className="rounded-xl bg-slate-100 p-3 text-sm text-slate-600">这一天还没有安排事项。</p>
