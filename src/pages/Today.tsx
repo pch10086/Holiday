@@ -17,37 +17,39 @@ export function TodayPage() {
   }, [todayItems])
 
   if (loading && !tripDetail) {
-    return <p className="p-4 text-sm text-slate-500">加载今天数据...</p>
+    return <p className="p-4 text-[15px] text-black/48">加载今天数据…</p>
   }
   if (!tripDetail) {
-    return <p className="p-4 text-sm text-red-600">{error ?? '旅行不存在'}</p>
+    return <p className="p-4 text-[15px] font-medium text-apple-text">{error ?? '旅行不存在'}</p>
   }
 
   const beforeStart = dateStatus === 'beforeStart'
 
   return (
-    <div className="pb-24">
+    <div className="pb-28">
       <PageHeader title="今天" subtitle={tripDetail.trip.title} backTo={`/trip/${id}`} />
-      <main className="mx-auto w-full max-w-md space-y-4 bg-stone-50 px-4 py-4">
+      <main className="mx-auto w-full max-w-md space-y-4 px-4 py-4">
         {beforeStart ? (
-          <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <p className="rounded-[12px] bg-white px-4 py-3 text-[14px] leading-relaxed text-black/80 shadow-apple-card">
             旅行尚未开始（出发日 {tripDetail.trip.startDate}）。当前展示第一天预览；今日行程与清单均暂不可勾选完成，可在「行程」「清单」页继续编辑计划。
           </p>
         ) : null}
         {dateStatus === 'afterEnd' ? (
-          <p className="rounded-xl border border-slate-200 bg-slate-100 p-3 text-sm text-slate-700">
+          <p className="rounded-[12px] bg-white px-4 py-3 text-[14px] leading-relaxed text-black/70 shadow-apple-card">
             本次旅行已结束（结束日 {tripDetail.trip.endDate}）。当前展示最后一天行程回顾。
           </p>
         ) : null}
-        <section className="rounded-2xl bg-emerald-900 p-4 text-white shadow-sm">
-          <p className="text-sm text-emerald-100">{todayDay?.title ?? '未匹配到今天行程'}</p>
-          <h2 className="mt-1 text-xl font-semibold">今日进度 {progress}%</h2>
-          <p className="mt-2 text-xs text-emerald-100">还有 {pendingTasks.length} 项任务待完成</p>
+
+        <section className="rounded-[12px] bg-apple-black px-4 py-5 text-white shadow-apple-card">
+          <p className="text-[12px] font-medium text-white/48">{todayDay?.title ?? '未匹配到今天行程'}</p>
+          <h2 className="mt-2 text-[28px] font-semibold leading-none tracking-[-0.04em]">今日进度 {progress}%</h2>
+          <p className="mt-3 text-[12px] text-white/55">还有 {pendingTasks.length} 项任务待完成</p>
         </section>
 
-        <section className="rounded-2xl bg-white p-4">
-          <h3 className="mb-3 flex items-center gap-2 font-medium text-emerald-950">
-            <Clock4 size={16} /> 今天的行程
+        <section className="rounded-[12px] bg-white p-4 shadow-apple-card">
+          <h3 className="mb-4 flex items-center gap-2 text-[15px] font-semibold tracking-[-0.02em] text-apple-text">
+            <Clock4 size={17} strokeWidth={2} className="text-apple-blue" aria-hidden />
+            今天的行程
           </h3>
           <div className="space-y-2">
             {todayItems.map((item) => (
@@ -59,19 +61,26 @@ export function TodayPage() {
                 onToggleComplete={(it, completed) => void toggleItineraryItemComplete(id, it.id, completed)}
               />
             ))}
-            {!todayItems.length ? <p className="text-sm text-slate-600">今天暂无行程安排。</p> : null}
+            {!todayItems.length ? (
+              <p className="text-[14px] leading-relaxed text-black/55">今天暂无行程安排。</p>
+            ) : null}
           </div>
         </section>
 
-        <section className="rounded-2xl bg-white p-4">
-          <h3 className="mb-2 font-medium text-emerald-950">今天未完成任务</h3>
+        <section className="rounded-[12px] bg-white p-4 shadow-apple-card">
+          <h3 className="mb-3 text-[15px] font-semibold tracking-[-0.02em] text-apple-text">今天未完成任务</h3>
           <div className="space-y-2">
             {pendingTasks.slice(0, 5).map((task) => (
-              <p key={task.id} className="rounded-xl bg-slate-100 px-3 py-2 text-sm text-slate-700">
+              <p
+                key={task.id}
+                className="rounded-lg bg-apple-surface px-3 py-2.5 text-[14px] leading-snug text-black/80"
+              >
                 {task.title}
               </p>
             ))}
-            {!pendingTasks.length ? <p className="text-sm text-emerald-700">太棒了，全部任务已完成。</p> : null}
+            {!pendingTasks.length ? (
+              <p className="text-[14px] text-black/55">太棒了，全部任务已完成。</p>
+            ) : null}
           </div>
         </section>
       </main>

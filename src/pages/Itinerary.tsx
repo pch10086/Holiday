@@ -12,6 +12,9 @@ type ManagePhase = 'idle' | 'add' | 'pickEdit' | 'edit' | 'pickDelete'
 
 const emptyForm = { time: '09:00', title: '', location: '', notes: '' }
 
+const field =
+  'mt-1 min-h-11 w-full rounded-[11px] border-[3px] border-black/[0.04] bg-apple-surface px-3 text-[15px] text-apple-text outline-none transition focus-visible:border-apple-blue'
+
 export function ItineraryPage() {
   const { id = '' } = useParams()
   const { tripDetail, loading, error, createItineraryItem, updateItineraryItem, deleteItineraryItem } =
@@ -41,10 +44,10 @@ export function ItineraryPage() {
   }
 
   if (loading && !tripDetail) {
-    return <p className="p-4 text-sm text-slate-500">加载行程中...</p>
+    return <p className="p-4 text-[15px] text-black/48">加载行程中…</p>
   }
   if (!tripDetail) {
-    return <p className="p-4 text-sm text-red-600">{error ?? '旅行不存在'}</p>
+    return <p className="p-4 text-[15px] font-medium text-apple-text">{error ?? '旅行不存在'}</p>
   }
 
   const days = tripDetail.days
@@ -118,10 +121,10 @@ export function ItineraryPage() {
             resetManage()
             setManagePhase('add')
           }}
-          className="inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded-xl bg-emerald-900 text-sm font-medium text-white"
+          className="inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded-lg bg-apple-blue text-[14px] font-normal text-white transition hover:bg-apple-blue-hover"
           aria-label="新增行程"
         >
-          <Plus size={18} /> 新增
+          <Plus size={17} strokeWidth={2} /> 新增
         </button>
         <button
           type="button"
@@ -129,10 +132,10 @@ export function ItineraryPage() {
             resetManage()
             setManagePhase('pickEdit')
           }}
-          className="inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded-xl border border-emerald-200 bg-white text-sm font-medium text-emerald-800"
+          className="inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded-lg border-[3px] border-black/[0.04] bg-apple-surface text-[14px] font-normal text-apple-text transition hover:bg-black/[0.03]"
           aria-label="编辑行程"
         >
-          <Pencil size={18} /> 编辑
+          <Pencil size={17} strokeWidth={2} /> 编辑
         </button>
         <button
           type="button"
@@ -140,27 +143,27 @@ export function ItineraryPage() {
             resetManage()
             setManagePhase('pickDelete')
           }}
-          className="inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded-xl border border-red-200 bg-red-50 text-sm font-medium text-red-700"
+          className="inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded-lg bg-apple-text text-[14px] font-normal text-white transition hover:opacity-90"
           aria-label="删除行程"
         >
-          <Trash2 size={18} /> 删除
+          <Trash2 size={17} strokeWidth={2} /> 删除
         </button>
       </div>
     ) : (
       <button
         type="button"
         onClick={resetManage}
-        className="min-h-11 w-full rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-700"
+        className="min-h-11 w-full rounded-lg bg-white text-[15px] font-normal text-apple-text shadow-apple-card transition hover:bg-apple-surface"
       >
         取消操作
       </button>
     )
 
   return (
-    <div className="pb-24">
+    <div className="pb-28">
       <PageHeader title="行程安排" subtitle={tripDetail.trip.title} backTo={`/trip/${id}`} below={toolbar} />
-      <main className="mx-auto w-full max-w-md bg-stone-50 px-4 py-4">
-        <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+      <main className="mx-auto w-full max-w-md px-4 py-4">
+        <div className="mb-5 flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
           {days.map((day) => (
             <button
               type="button"
@@ -171,8 +174,10 @@ export function ItineraryPage() {
                   resetManage()
                 }
               }}
-              className={`min-h-11 shrink-0 rounded-full px-4 text-sm ${
-                day.id === selectedDayId ? 'bg-emerald-900 text-white' : 'bg-white text-emerald-800'
+              className={`min-h-10 shrink-0 rounded-full px-4 text-[14px] font-medium tracking-[-0.02em] transition ${
+                day.id === selectedDayId
+                  ? 'bg-apple-text text-white'
+                  : 'bg-white text-black/70 shadow-apple-card hover:text-apple-text'
               }`}
             >
               D{day.dayNumber}
@@ -181,12 +186,12 @@ export function ItineraryPage() {
         </div>
 
         {managePhase === 'pickEdit' ? (
-          <p className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <p className="mb-3 rounded-lg bg-white px-4 py-3 text-[14px] leading-relaxed text-black/80 shadow-apple-card">
             请点击下方要编辑的行程项
           </p>
         ) : null}
         {managePhase === 'pickDelete' ? (
-          <p className="mb-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+          <p className="mb-3 rounded-lg bg-apple-dark-1 px-4 py-3 text-[14px] leading-relaxed text-white/85">
             请点击要删除的行程项
           </p>
         ) : null}
@@ -196,57 +201,57 @@ export function ItineraryPage() {
             {showForm ? (
               <form
                 onSubmit={managePhase === 'edit' ? submitEdit : submitCreate}
-                className="mb-4 space-y-2 rounded-2xl bg-white p-3 shadow-sm"
+                className="mb-5 space-y-3 rounded-[12px] bg-white p-4 shadow-apple-card"
               >
-                <p className="text-sm font-medium text-emerald-950">
+                <p className="text-[15px] font-semibold tracking-[-0.02em] text-apple-text">
                   {managePhase === 'edit' ? '编辑行程项' : '新增行程项'}
                 </p>
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="text-xs text-slate-600">
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="text-[11px] font-medium uppercase tracking-wide text-black/48">
                     时间
                     <input
                       type="time"
                       value={form.time}
                       onChange={(event) => setForm((prev) => ({ ...prev, time: event.target.value }))}
-                      className="mt-1 min-h-11 w-full rounded-xl border border-emerald-200 px-3 text-sm"
+                      className={field}
                     />
                   </label>
-                  <label className="text-xs text-slate-600">
+                  <label className="text-[11px] font-medium uppercase tracking-wide text-black/48">
                     地点
                     <input
                       value={form.location}
                       onChange={(event) => setForm((prev) => ({ ...prev, location: event.target.value }))}
-                      className="mt-1 min-h-11 w-full rounded-xl border border-emerald-200 px-3 text-sm"
+                      className={field}
                     />
                   </label>
                 </div>
-                <label className="text-xs text-slate-600">
+                <label className="text-[11px] font-medium uppercase tracking-wide text-black/48">
                   标题
                   <input
                     value={form.title}
                     onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
-                    className="mt-1 min-h-11 w-full rounded-xl border border-emerald-200 px-3 text-sm"
+                    className={field}
                   />
                 </label>
-                <label className="text-xs text-slate-600">
+                <label className="text-[11px] font-medium uppercase tracking-wide text-black/48">
                   备注
                   <textarea
                     value={form.notes}
                     onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
-                    className="mt-1 min-h-20 w-full rounded-xl border border-emerald-200 px-3 py-2 text-sm"
+                    className="mt-1 min-h-24 w-full rounded-[11px] border-[3px] border-black/[0.04] bg-apple-surface px-3 py-2 text-[15px] text-apple-text outline-none transition focus-visible:border-apple-blue"
                   />
                 </label>
-                <div className="flex gap-2">
+                <div className="flex gap-2 pt-1">
                   <button
                     type="submit"
-                    className="min-h-11 flex-1 rounded-xl bg-emerald-900 text-sm font-medium text-white"
+                    className="min-h-11 flex-1 rounded-lg bg-apple-blue text-[15px] font-normal text-white transition hover:bg-apple-blue-hover"
                   >
-                    {managePhase === 'edit' ? '保存修改' : '保存新增'}
+                    {managePhase === 'edit' ? '保存' : '保存'}
                   </button>
                   <button
                     type="button"
                     onClick={resetManage}
-                    className="min-h-11 flex-1 rounded-xl border border-emerald-200 text-sm text-emerald-800"
+                    className="min-h-11 flex-1 rounded-lg border-[3px] border-black/[0.04] bg-apple-surface text-[15px] font-normal text-apple-text transition hover:bg-black/[0.03]"
                   >
                     取消
                   </button>

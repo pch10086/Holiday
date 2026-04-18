@@ -7,7 +7,6 @@ interface ItineraryItemProps {
   item: ItineraryItemType
   highlight?: boolean
   onToggleComplete?: (item: ItineraryItemType, completed: boolean) => void
-  /** 与清单页一致：旅行未开始等场景下禁止勾选完成 */
   disabled?: boolean
   selectMode?: ItinerarySelectMode | null
   onItemSelect?: (item: ItineraryItemType) => void
@@ -26,13 +25,13 @@ export function ItineraryItem({
 
   return (
     <article
-      className={`flex gap-2 rounded-2xl border p-3 transition ${
-        highlight && !done ? 'border-amber-300 bg-amber-50' : 'border-emerald-100 bg-white'
-      } ${done ? 'opacity-90' : ''} ${
+      className={`flex gap-3 rounded-[12px] bg-white p-3 shadow-apple-card transition ${
+        highlight && !done ? 'ring-2 ring-apple-blue/35 ring-offset-2 ring-offset-apple-gray' : ''
+      } ${done ? 'opacity-[0.92]' : ''} ${
         picking
           ? selectMode === 'delete'
-            ? 'cursor-pointer ring-2 ring-red-200 ring-offset-1 hover:bg-red-50/40'
-            : 'cursor-pointer ring-2 ring-emerald-200 ring-offset-1 hover:bg-emerald-50/50'
+            ? 'cursor-pointer ring-2 ring-apple-text/20 ring-offset-2 ring-offset-apple-gray'
+            : 'cursor-pointer ring-2 ring-apple-blue/30 ring-offset-2 ring-offset-apple-gray'
           : ''
       }`}
       onClick={picking ? () => onItemSelect?.(item) : undefined}
@@ -52,12 +51,12 @@ export function ItineraryItem({
       {onToggleComplete ? (
         <button
           type="button"
-          className={`mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border ${
+          className={`mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-[2px] ${
             disabled
-              ? 'cursor-not-allowed border-slate-300 bg-slate-100 text-slate-400'
+              ? 'cursor-not-allowed border-black/[0.08] bg-apple-surface text-black/35'
               : done
-                ? 'border-emerald-900 bg-emerald-900 text-white'
-                : 'border-emerald-300'
+                ? 'border-apple-blue bg-apple-blue text-white'
+                : 'border-black/[0.12] bg-white text-transparent'
           }`}
           onClick={(e) => {
             e.stopPropagation()
@@ -66,29 +65,31 @@ export function ItineraryItem({
           aria-label={done ? '标记未完成' : '标记已完成'}
           disabled={disabled}
         >
-          {done ? <Check size={14} /> : null}
+          {done ? <Check size={14} strokeWidth={2.5} /> : null}
         </button>
       ) : null}
       <div className="min-w-0 flex-1">
         <div className="mb-1 flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-emerald-900 px-2 py-1 text-xs font-semibold text-white">
+          <span className="rounded-md bg-apple-text px-2 py-0.5 text-[11px] font-semibold tabular-nums text-white">
             {item.time}
           </span>
-          <h4 className={`font-medium ${done ? 'text-slate-400 line-through' : 'text-emerald-950'}`}>
+          <h4
+            className={`text-[15px] font-semibold leading-snug tracking-[-0.02em] ${
+              done ? 'text-black/45 line-through' : 'text-apple-text'
+            }`}
+          >
             {item.title}
           </h4>
         </div>
         {item.location ? (
-          <p
-            className={`mb-1 flex items-center gap-1 text-sm ${
-              done ? 'text-slate-400' : 'text-emerald-700'
-            }`}
-          >
-            <MapPin size={14} /> {item.location}
+          <p className={`mb-1 flex items-center gap-1 text-[14px] leading-snug ${done ? 'text-black/40' : 'text-black/70'}`}>
+            <MapPin size={14} className="shrink-0 opacity-60" aria-hidden /> {item.location}
           </p>
         ) : null}
         {item.notes ? (
-          <p className={`text-xs ${done ? 'text-slate-400' : 'text-slate-600'}`}>{item.notes}</p>
+          <p className={`text-[12px] leading-relaxed tracking-[-0.01em] ${done ? 'text-black/40' : 'text-black/48'}`}>
+            {item.notes}
+          </p>
         ) : null}
       </div>
     </article>

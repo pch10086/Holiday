@@ -16,11 +16,11 @@ export function TaskItem({ task, onToggle, disabled, selectMode, onTaskSelect }:
 
   return (
     <article
-      className={`flex items-start gap-3 rounded-2xl border border-emerald-100 bg-white p-3 transition ${
+      className={`flex items-start gap-3 rounded-[12px] bg-white p-3 shadow-apple-card transition ${
         picking
           ? selectMode === 'delete'
-            ? 'cursor-pointer ring-2 ring-red-200 ring-offset-1 hover:bg-red-50/40'
-            : 'cursor-pointer ring-2 ring-emerald-200 ring-offset-1 hover:bg-emerald-50/50'
+            ? 'cursor-pointer ring-2 ring-apple-text/20 ring-offset-2 ring-offset-apple-gray'
+            : 'cursor-pointer ring-2 ring-apple-blue/30 ring-offset-2 ring-offset-apple-gray'
           : ''
       }`}
       onClick={picking ? () => onTaskSelect?.(task) : undefined}
@@ -39,12 +39,12 @@ export function TaskItem({ task, onToggle, disabled, selectMode, onTaskSelect }:
     >
       <button
         type="button"
-        className={`mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${
+        className={`mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[2px] ${
           disabled
-            ? 'cursor-not-allowed border-slate-300 bg-slate-100 text-slate-400'
+            ? 'cursor-not-allowed border-black/[0.08] bg-apple-surface text-black/35'
             : task.completed
-              ? 'border-emerald-900 bg-emerald-900 text-white'
-              : 'border-emerald-300'
+              ? 'border-apple-blue bg-apple-blue text-white'
+              : 'border-black/[0.12] bg-white text-transparent'
         }`}
         onClick={(e) => {
           e.stopPropagation()
@@ -53,15 +53,19 @@ export function TaskItem({ task, onToggle, disabled, selectMode, onTaskSelect }:
         aria-label={task.completed ? '标记未完成' : '标记完成'}
         disabled={disabled}
       >
-        {task.completed ? <Check size={14} /> : null}
+        {task.completed ? <Check size={13} strokeWidth={2.5} /> : null}
       </button>
       <div className="min-w-0 flex-1">
-        <p className={`${task.completed ? 'text-slate-400 line-through' : 'text-emerald-950'} text-sm`}>
+        <p
+          className={`text-[15px] font-semibold leading-snug tracking-[-0.02em] ${
+            task.completed ? 'text-black/45 line-through' : 'text-apple-text'
+          }`}
+        >
           {task.title}
         </p>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-[12px] leading-relaxed tracking-[-0.01em] text-black/48">
           {task.assignee ? `执行人：${task.assignee}` : '未指定执行人'}
-          {task.updatedBy ? ` · 更新者：${task.updatedBy}` : ''}
+          {task.updatedBy ? ` · ${task.updatedBy}` : ''}
         </p>
       </div>
     </article>

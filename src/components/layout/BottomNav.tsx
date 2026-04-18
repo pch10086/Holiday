@@ -1,8 +1,8 @@
 import { ClipboardList, Compass, Home, Sun } from 'lucide-react'
 import { NavLink, useParams } from 'react-router-dom'
 
-const baseClass =
-  'flex min-h-12 flex-1 items-center justify-center rounded-xl text-sm font-medium transition'
+const itemBase =
+  'flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-1 py-2 text-[11px] font-medium leading-none tracking-[-0.02em] transition-colors sm:flex-row sm:gap-1 sm:text-xs'
 
 export function BottomNav() {
   const { id } = useParams()
@@ -16,18 +16,28 @@ export function BottomNav() {
   ]
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-md border-t border-emerald-100 bg-white p-3">
-      <div className="flex gap-2">
+    <nav
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2"
+      aria-label="行程主导航"
+    >
+      <div
+        className="pointer-events-auto flex w-full max-w-md items-stretch gap-0.5 rounded-full bg-black/80 px-1.5 py-1.5 shadow-apple-card backdrop-blur-xl backdrop-saturate-180 supports-[backdrop-filter]:bg-black/72"
+        style={{ WebkitBackdropFilter: 'saturate(180%) blur(20px)' }}
+      >
         {items.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `${baseClass} ${isActive ? 'bg-emerald-900 text-white' : 'bg-emerald-50 text-emerald-800'}`
+              `${itemBase} ${
+                isActive
+                  ? 'bg-apple-blue text-white'
+                  : 'text-white/55 hover:bg-white/[0.08] hover:text-white/90'
+              }`
             }
           >
-            <item.icon size={16} className="mr-1.5" />
-            {item.label}
+            <item.icon size={17} strokeWidth={1.75} className="shrink-0 opacity-95" aria-hidden />
+            <span>{item.label}</span>
           </NavLink>
         ))}
       </div>
