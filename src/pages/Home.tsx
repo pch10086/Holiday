@@ -5,7 +5,10 @@ import { TripCard } from '../components/trip/TripCard'
 import { useTripStore } from '../store/tripStore'
 
 export function HomePage() {
-  const { trips, loading, error, fetchTrips } = useTripStore()
+  const trips = useTripStore((s) => s.trips)
+  const tripsLoading = useTripStore((s) => s.tripsLoading)
+  const error = useTripStore((s) => s.error)
+  const fetchTrips = useTripStore((s) => s.fetchTrips)
 
   useEffect(() => {
     void fetchTrips()
@@ -41,7 +44,7 @@ export function HomePage() {
       </section>
 
       <div className="relative z-[1] -mt-6 min-h-[45vh] rounded-t-[28px] bg-apple-gray px-4 pb-28 pt-8 text-apple-text">
-        {loading ? <p className="text-[15px] text-black/48">正在加载旅行列表…</p> : null}
+        {tripsLoading ? <p className="text-[15px] text-black/48">正在加载旅行列表…</p> : null}
         {error ? (
           <p className="mb-4 rounded-lg bg-apple-surface px-4 py-3 text-[14px] leading-relaxed text-apple-text">
             {error}
@@ -65,7 +68,7 @@ export function HomePage() {
           ))}
         </section>
 
-        {!loading && trips.length === 0 ? (
+        {!tripsLoading && trips.length === 0 ? (
           <p className="mt-6 rounded-lg bg-white px-4 py-5 text-[15px] leading-[1.47] text-black/80 shadow-apple-card">
             还没有旅行。点上方「创建新旅行」开始。
           </p>

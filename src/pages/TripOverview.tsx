@@ -1,11 +1,13 @@
 import { ArrowLeft } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { TripStats } from '../components/trip/TripStats'
+import { useConfirm } from '../hooks/useConfirm'
 import { useTrip } from '../hooks/useTrip'
 
 export function TripOverviewPage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
+  const confirm = useConfirm()
   const { tripDetail, loading, error, deleteTrip } = useTrip(id)
 
   if (loading && !tripDetail) {
@@ -26,7 +28,12 @@ export function TripOverviewPage() {
 
   const doneTasks = tripDetail.tasks.filter((task) => task.completed).length
   const removeTrip = async () => {
-    const confirmed = window.confirm(`确认永久删除旅行「${tripDetail.trip.title}」吗？删除后不可恢复。`)
+    const confirmed = await confirm({
+      title: '删除旅行',
+      message: `确认永久删除旅行「${tripDetail.trip.title}」吗？删除后不可恢复。`,
+      confirmLabel: '删除',
+      cancelLabel: '取消',
+    })
     if (!confirmed) return
     await deleteTrip(id)
     navigate('/')

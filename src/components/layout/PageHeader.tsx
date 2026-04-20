@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { ArrowLeft, Share2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useToast } from '../../hooks/useToast'
 
 interface PageHeaderProps {
   title: string
@@ -15,11 +16,16 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, backTo, rightAction, below, variant = 'light' }: PageHeaderProps) {
   const navigate = useNavigate()
+  const toast = useToast()
   const isDark = variant === 'dark'
 
   const copyLink = async () => {
-    await navigator.clipboard.writeText(window.location.href)
-    alert('链接已复制，可直接发给旅伴。')
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      toast('链接已复制，可直接发给旅伴。')
+    } catch {
+      toast('无法访问剪贴板，请手动复制地址栏链接。')
+    }
   }
 
   const shell =

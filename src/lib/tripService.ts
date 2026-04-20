@@ -16,6 +16,7 @@ import type {
 } from '../types'
 
 const STORAGE_KEY = 'holiday_trips_v1'
+const SCHEMA_VERSION = 1
 
 interface LocalDataShape {
   trips: Trip[]
@@ -24,26 +25,92 @@ interface LocalDataShape {
   tasks: Task[]
 }
 
-function loadLocalData(): LocalDataShape {
-  const raw = localStorage.getItem(STORAGE_KEY)
-  if (!raw) {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        trips: [mockTrip.trip],
-        days: mockTrip.days,
-        itineraryItems: mockTrip.itineraryItems,
-        tasks: mockTrip.tasks,
-      }),
-    )
-    return loadLocalData()
-  }
+interface PersistedV1 extends LocalDataShape {
+  schemaVersion: number
+}
 
-  return JSON.parse(raw) as LocalDataShape
+function seedLocalStorage(): void {
+  const payload: PersistedV1 = {
+    schemaVersion: SCHEMA_VERSION,
+    trips: [mockTrip.trip],
+    days: mockTrip.days,
+    itineraryItems: mockTrip.itineraryItems,
+    tasks: mockTrip.tasks,
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
+}
+
+function parseStoredJson(raw: string): unknown {
+  try {
+    return JSON.parse(raw) as unknown
+  } catch {
+    throw new Error('本地数据已损坏（JSON 无效）。已恢复为示例旅行，建议重新导入或同步云端。')
+  }
+}
+
+/** 兼容无 schemaVersion 的旧数据；日后可在此按版本迁移字段 */
+function migrateToLocalShape(parsed: unknown): LocalDataShape {
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('本地数据格式无效。')
+  }
+  const o = parsed as Record<string, unknown>
+  const hasVersion = 'schemaVersion' in o
+  if (hasVersion) {
+    const v = o.schemaVersion
+    if (v !== SCHEMA_VERSION) {
+      throw new Error(`不支持的本地数据版本：${String(v)}。请清除站点数据或联系维护者。`)
+    }
+  }
+  const trips = o.trips
+  const days = o.days
+  const items = o.itineraryItems
+  const tasks = o.tasks
+  if (!Array.isArray(trips) || !Array.isArray(days) || !Array.isArray(items) || !Array.isArray(tasks)) {
+    throw new Error('本地数据缺少必要字段。')
+  }
+  return {
+    trips: trips as Trip[],
+    days: days as ItineraryDay[],
+    itineraryItems: items as ItineraryItem[],
+    tasks: tasks as Task[],
+  }
+}
+
+function loadLocalData(): LocalDataShape {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) {
+      seedLocalStorage()
+      return migrateToLocalShape(parseStoredJson(localStorage.getItem(STORAGE_KEY) ?? '{}'))
+    }
+
+    const parsed = parseStoredJson(raw)
+    const shape = migrateToLocalShape(parsed)
+
+    if (!(parsed as PersistedV1).schemaVersion) {
+      saveLocalData(shape)
+    }
+    return shape
+  } catch (error) {
+    console.error('[holiday] localStorage load failed', error)
+    try {
+      localStorage.removeItem(STORAGE_KEY)
+    } catch {
+      /* ignore */
+    }
+    seedLocalStorage()
+    return migrateToLocalShape(parseStoredJson(localStorage.getItem(STORAGE_KEY) ?? '{}'))
+  }
 }
 
 function saveLocalData(data: LocalDataShape) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+  const payload: PersistedV1 = { schemaVersion: SCHEMA_VERSION, ...data }
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
+  } catch (error) {
+    console.error('[holiday] localStorage save failed', error)
+    throw new Error('无法写入本地存储（可能已满或处于隐私模式）。请释放空间后重试。')
+  }
 }
 
 function toLocalDateStart(date: string | Date): Date {

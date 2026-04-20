@@ -22,13 +22,31 @@ import {
   updateTask,
 } from '../lib/tripService'
 
+/** 同一路由内短时间切换子页时不重复请求详情 */
+const DETAIL_STALE_MS = 30_000
+
+function markDetailFresh(
+  set: (partial: Partial<TripStore>) => void,
+  detail: TripDetail | null,
+  tripId: string | null,
+) {
+  set({
+    tripDetail: detail,
+    detailFetchedAt: detail ? Date.now() : null,
+    detailFetchedTripId: detail ? tripId : null,
+  })
+}
+
 interface TripStore {
   trips: Trip[]
   tripDetail: TripDetail | null
-  loading: boolean
+  tripsLoading: boolean
+  detailLoading: boolean
   error: string | null
+  detailFetchedAt: number | null
+  detailFetchedTripId: string | null
   fetchTrips: () => Promise<void>
-  fetchTripDetail: (tripId: string) => Promise<void>
+  fetchTripDetail: (tripId: string, options?: { force?: boolean }) => Promise<void>
   createTrip: Parameters<typeof createTrip>[0] extends infer T
     ? (input: T) => Promise<Trip>
     : never
@@ -47,44 +65,82 @@ interface TripStore {
   deleteTask: (tripId: string, taskId: string) => Promise<void>
 }
 
-export const useTripStore = create<TripStore>((set) => ({
+export const useTripStore = create<TripStore>((set, get) => ({
   trips: [],
   tripDetail: null,
-  loading: false,
+  tripsLoading: false,
+  detailLoading: false,
   error: null,
+  detailFetchedAt: null,
+  detailFetchedTripId: null,
+
   fetchTrips: async () => {
-    set({ loading: true, error: null })
+    set({ tripsLoading: true, error: null })
     try {
       const trips = await listTrips()
-      set({ trips, loading: false })
+      set({ trips, tripsLoading: false })
     } catch (error) {
-      set({ loading: false, error: error instanceof Error ? error.message : '加载旅行列表失败' })
+      set({
+        tripsLoading: false,
+        error: error instanceof Error ? error.message : '加载旅行列表失败',
+      })
     }
   },
-  fetchTripDetail: async (tripId) => {
-    set({ loading: true, error: null })
+
+  fetchTripDetail: async (tripId, options) => {
+    const force = options?.force ?? false
+    const { tripDetail, detailFetchedAt, detailFetchedTripId } = get()
+    if (
+      !force &&
+      tripDetail &&
+      tripDetail.trip.id === tripId &&
+      detailFetchedTripId === tripId &&
+      detailFetchedAt != null &&
+      Date.now() - detailFetchedAt < DETAIL_STALE_MS
+    ) {
+      return
+    }
+
+    set({ detailLoading: true, error: null })
     try {
       const detail = await getTripDetail(tripId)
       if (!detail) {
-        set({ loading: false, error: '旅行不存在', tripDetail: null })
+        set({
+          detailLoading: false,
+          error: '旅行不存在',
+          tripDetail: null,
+          detailFetchedAt: null,
+          detailFetchedTripId: null,
+        })
         return
       }
-      set({ tripDetail: detail, loading: false })
+      set({
+        tripDetail: detail,
+        detailLoading: false,
+        detailFetchedAt: Date.now(),
+        detailFetchedTripId: tripId,
+      })
     } catch (error) {
-      set({ loading: false, error: error instanceof Error ? error.message : '加载旅行详情失败' })
+      set({
+        detailLoading: false,
+        error: error instanceof Error ? error.message : '加载旅行详情失败',
+      })
     }
   },
+
   createTrip: async (input) => {
     const trip = await createTrip(input)
     set((state) => ({ trips: [trip, ...state.trips] }))
     return trip
   },
+
   importPlan: async (tripId, text) => {
     const { result } = await importTripPlan(tripId, text)
     const detail = await getTripDetail(tripId)
-    set({ tripDetail: detail })
+    markDetailFresh(set, detail, detail ? tripId : null)
     return result.warnings
   },
+
   toggleTaskStatus: async (tripId, taskId, completed) => {
     const detail = await getTripDetail(tripId)
     if (!detail) {
@@ -92,46 +148,59 @@ export const useTripStore = create<TripStore>((set) => ({
     }
     await toggleTask(taskId, completed, detail.trip.startDate)
     const updatedDetail = await getTripDetail(tripId)
-    set({ tripDetail: updatedDetail })
+    markDetailFresh(set, updatedDetail, tripId)
   },
+
   deleteTrip: async (tripId) => {
     await deleteTrip(tripId)
     const trips = await listTrips()
-    set({ trips, tripDetail: null })
+    set({
+      trips,
+      tripDetail: null,
+      detailFetchedAt: null,
+      detailFetchedTripId: null,
+    })
   },
+
   createItineraryItem: async (tripId, input) => {
     await createItineraryItem({ ...input, tripId })
     const detail = await getTripDetail(tripId)
-    set({ tripDetail: detail })
+    markDetailFresh(set, detail, tripId)
   },
+
   updateItineraryItem: async (tripId, itemId, input) => {
     await updateItineraryItem(itemId, input)
     const detail = await getTripDetail(tripId)
-    set({ tripDetail: detail })
+    markDetailFresh(set, detail, tripId)
   },
+
   toggleItineraryItemComplete: async (tripId, itemId, completed) => {
     await updateItineraryItem(itemId, { completed, updatedBy: '旅伴' })
     const detail = await getTripDetail(tripId)
-    set({ tripDetail: detail })
+    markDetailFresh(set, detail, tripId)
   },
+
   deleteItineraryItem: async (tripId, itemId) => {
     await deleteItineraryItem(itemId)
     const detail = await getTripDetail(tripId)
-    set({ tripDetail: detail })
+    markDetailFresh(set, detail, tripId)
   },
+
   createTask: async (tripId, input) => {
     await createTask({ ...input, tripId })
     const detail = await getTripDetail(tripId)
-    set({ tripDetail: detail })
+    markDetailFresh(set, detail, tripId)
   },
+
   updateTask: async (tripId, taskId, input) => {
     await updateTask(taskId, input)
     const detail = await getTripDetail(tripId)
-    set({ tripDetail: detail })
+    markDetailFresh(set, detail, tripId)
   },
+
   deleteTask: async (tripId, taskId) => {
     await deleteTask(taskId)
     const detail = await getTripDetail(tripId)
-    set({ tripDetail: detail })
+    markDetailFresh(set, detail, tripId)
   },
 }))

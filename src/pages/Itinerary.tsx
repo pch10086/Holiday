@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useParams } from 'react-router-dom'
 import { DaySection } from '../components/itinerary/DaySection'
 import { PageHeader } from '../components/layout/PageHeader'
+import { useConfirm } from '../hooks/useConfirm'
 import { useTrip } from '../hooks/useTrip'
 import { resolveCurrentTripDay } from '../hooks/useToday'
 import type { ItineraryItem } from '../types'
@@ -17,12 +18,20 @@ const field =
 
 export function ItineraryPage() {
   const { id = '' } = useParams()
+  const confirm = useConfirm()
+  const pickHintRef = useRef<HTMLParagraphElement>(null)
   const { tripDetail, loading, error, createItineraryItem, updateItineraryItem, deleteItineraryItem } =
     useTrip(id)
   const [activeDayId, setActiveDayId] = useState<string>('')
   const [managePhase, setManagePhase] = useState<ManagePhase>('idle')
   const [editingItem, setEditingItem] = useState<ItineraryItem | null>(null)
   const [form, setForm] = useState(emptyForm)
+
+  useEffect(() => {
+    if (managePhase === 'pickEdit' || managePhase === 'pickDelete') {
+      pickHintRef.current?.focus()
+    }
+  }, [managePhase])
 
   const nextItemId = useMemo(() => {
     if (!tripDetail?.days.length) return undefined
@@ -95,7 +104,12 @@ export function ItineraryPage() {
   }
 
   const onPickDeleteItem = async (item: ItineraryItem) => {
-    const confirmed = window.confirm(`确认删除行程「${item.title}」吗？`)
+    const confirmed = await confirm({
+      title: '删除行程',
+      message: `确认删除行程「${item.title}」吗？`,
+      confirmLabel: '删除',
+      cancelLabel: '取消',
+    })
     if (!confirmed) return
     await deleteItineraryItem(id, item.id)
     resetManage()
@@ -107,7 +121,9 @@ export function ItineraryPage() {
     managePhase === 'pickEdit'
       ? onPickEditItem
       : managePhase === 'pickDelete'
-        ? (it: ItineraryItem) => void onPickDeleteItem(it)
+        ? (it: ItineraryItem) => {
+            void onPickDeleteItem(it)
+          }
         : undefined
 
   const showForm = managePhase === 'add' || managePhase === 'edit'
@@ -185,14 +201,18 @@ export function ItineraryPage() {
           ))}
         </div>
 
-        {managePhase === 'pickEdit' ? (
-          <p className="mb-3 rounded-lg bg-white px-4 py-3 text-[14px] leading-relaxed text-black/80 shadow-apple-card">
-            请点击下方要编辑的行程项
-          </p>
-        ) : null}
-        {managePhase === 'pickDelete' ? (
-          <p className="mb-3 rounded-lg bg-apple-dark-1 px-4 py-3 text-[14px] leading-relaxed text-white/85">
-            请点击要删除的行程项
+        {managePhase === 'pickEdit' || managePhase === 'pickDelete' ? (
+          <p
+            ref={pickHintRef}
+            tabIndex={-1}
+            aria-live="polite"
+            className={`mb-3 rounded-lg px-4 py-3 text-[14px] leading-relaxed shadow-apple-card outline-none focus-visible:ring-2 focus-visible:ring-apple-blue ${
+              managePhase === 'pickDelete'
+                ? 'bg-apple-dark-1 text-white/85'
+                : 'bg-white text-black/80'
+            }`}
+          >
+            {managePhase === 'pickEdit' ? '请点击下方要编辑的行程项' : '请点击要删除的行程项'}
           </p>
         ) : null}
 

@@ -1,10 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useParams } from 'react-router-dom'
 import { PageHeader } from '../components/layout/PageHeader'
 import { TaskItem } from '../components/tasks/TaskItem'
 import { TaskProgress } from '../components/tasks/TaskProgress'
+import { useConfirm } from '../hooks/useConfirm'
+import { useToast } from '../hooks/useToast'
 import { useTrip } from '../hooks/useTrip'
 import { useTodayView } from '../hooks/useToday'
 import type { Task, TaskType } from '../types'
@@ -18,12 +20,21 @@ const field =
 
 export function TasksPage() {
   const { id = '' } = useParams()
+  const confirm = useConfirm()
+  const toast = useToast()
+  const pickHintRef = useRef<HTMLParagraphElement>(null)
   const { tripDetail, loading, error, toggleTaskStatus, createTask, updateTask, deleteTask } = useTrip(id)
   const { dateStatus } = useTodayView(tripDetail)
   const [tab, setTab] = useState<TaskType>('prep')
   const [managePhase, setManagePhase] = useState<ManagePhase>('idle')
   const [form, setForm] = useState(emptyForm)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
+
+  useEffect(() => {
+    if (managePhase === 'pickEdit' || managePhase === 'pickDelete') {
+      pickHintRef.current?.focus()
+    }
+  }, [managePhase])
 
   const summary = useMemo(() => {
     if (!tripDetail) return { done: 0, total: 0 }
@@ -83,7 +94,12 @@ export function TasksPage() {
   }
 
   const onPickDeleteTask = async (task: Task) => {
-    const confirmed = window.confirm(`确认删除任务「${task.title}」吗？`)
+    const confirmed = await confirm({
+      title: '删除任务',
+      message: `确认删除任务「${task.title}」吗？`,
+      confirmLabel: '删除',
+      cancelLabel: '取消',
+    })
     if (!confirmed) return
     await deleteTask(id, task.id)
     resetManage()
@@ -95,7 +111,9 @@ export function TasksPage() {
     managePhase === 'pickEdit'
       ? onPickEditTask
       : managePhase === 'pickDelete'
-        ? (t: Task) => void onPickDeleteTask(t)
+        ? (t: Task) => {
+            void onPickDeleteTask(t)
+          }
         : undefined
 
   const showForm = managePhase === 'add' || managePhase === 'edit'
@@ -180,14 +198,18 @@ export function TasksPage() {
           />
         </section>
 
-        {managePhase === 'pickEdit' ? (
-          <p className="rounded-lg bg-white px-4 py-3 text-[14px] leading-relaxed text-black/80 shadow-apple-card">
-            请点击下方要编辑的任务
-          </p>
-        ) : null}
-        {managePhase === 'pickDelete' ? (
-          <p className="rounded-lg bg-apple-dark-1 px-4 py-3 text-[14px] leading-relaxed text-white/85">
-            请点击要删除的任务
+        {managePhase === 'pickEdit' || managePhase === 'pickDelete' ? (
+          <p
+            ref={pickHintRef}
+            tabIndex={-1}
+            aria-live="polite"
+            className={`rounded-lg px-4 py-3 text-[14px] leading-relaxed shadow-apple-card outline-none focus-visible:ring-2 focus-visible:ring-apple-blue ${
+              managePhase === 'pickDelete'
+                ? 'bg-apple-dark-1 text-white/85'
+                : 'bg-white text-black/80'
+            }`}
+          >
+            {managePhase === 'pickEdit' ? '请点击下方要编辑的任务' : '请点击要删除的任务'}
           </p>
         ) : null}
 
@@ -252,7 +274,7 @@ export function TasksPage() {
                 try {
                   await toggleTaskStatus(id, currentTask.id, completed)
                 } catch (err) {
-                  window.alert(err instanceof Error ? err.message : '无法更新任务状态')
+                  toast(err instanceof Error ? err.message : '无法更新任务状态')
                 }
               }}
             />
