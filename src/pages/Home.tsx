@@ -57,14 +57,8 @@ export function HomePage() {
         </div>
 
         <section className="space-y-3">
-          {trips.map((trip, index) => (
-            <div
-              key={trip.id}
-              className={index % 2 === 1 ? 'pl-4' : 'pr-4'}
-              style={{ transform: index % 2 === 1 ? 'translateX(4px)' : 'translateX(-4px)' }}
-            >
-              <TripCard trip={trip} />
-            </div>
+          {trips.map((trip) => (
+            <TripCard key={trip.id} trip={trip} />
           ))}
         </section>
 
